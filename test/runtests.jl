@@ -10,7 +10,7 @@ using Test
     @test_throws ArgumentError crt(a, b, p, q)
 end
 
-@testset "crt" begin
+@testset "crt_short" begin
     a = [1, 11]
     m = [20, 50]
     @test crt(a, m) == crt(a..., m...)
@@ -33,6 +33,18 @@ end
     x, lc = crt(a, m)
     @test (x, lc) == (594867, 928200)
     @test a == mod.(x, m)
+end
+
+using Random
+rng = MersenneTwister(1)
+
+@testset "crt_long" begin
+    n = GeneralizedCRT.THRESHOLD * 9 ÷ 4
+    m = rand(rng, 1:20, n)
+    l = lcm(big.(m))
+    x = rand(rng, 1:l)
+    a = mod.(x, m)
+    @test crt(a, m) == (x, l)
 end
 
 end
