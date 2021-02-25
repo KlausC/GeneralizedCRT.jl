@@ -11,6 +11,9 @@ with `0 <= x < lcm(p, q)`.
 
 Return `x, lcm(p, q)`.
 """
+function crt(a::A, b::B, p::C, q::D) where {A,B,C,D}
+    crt(promote(a, b, p, q)...)
+end
 function crt(a::T, b::T, p::T, q::T) where T
     c, u = gcdx(p, q)
     q1 = div(q, c)
@@ -32,14 +35,29 @@ with `0 <= x < lcm(p, q)`.
 Return `x, lcm(p, q)`.
 
 """
-function crt(a::AbstractVector{T}, m::AbstractVector{T}) where T
+function crtm(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     n = length(a)
     n == length(m) || throw(ArgumentError("vectors of same size required"))
-    xI, lcmI = one(T), one(T)
+    xI, lcmI = one(T), one(S)
     for i = 1:n
         xI, lcmI = crt(xI, a[i], lcmI, m[i])
     end
     xI, lcmI
+end
+
+const THRESHOLD = 100
+
+function crt(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
+    n = length(a)
+    n == length(m) || throw(ArgumentError("vectors of same size required"))
+    if n < THRESHOLD
+        crtm(a, m)
+    else
+        n2 = (n + 1) ÷ 2
+        xI, lcmI = crt(view(a,1:n2), view(m, 1:n2))
+        xJ, lcmJ = crt(view(a, n2+1:n), view(m, n2+1:n))
+        crt(xI, xJ, lcmI, lcmJ)
+    end
 end
 
 end
