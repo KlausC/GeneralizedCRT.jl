@@ -3,7 +3,5 @@ uuid = "7208565e-50fc-4253-9db2-a2925814c645"
 authors = ["Klaus Crusius <klaus.crusius@web.de> and contributors"]
 version = "0.1.0"
 
-[dep]
-
 [compat]
 julia = "1"

@@ -10,11 +10,12 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.0'
           - '1'
           - 'nightly'
         os:
           - ubuntu-latest
+          - macos
+          - windows
         arch:
           - x64
     steps:
