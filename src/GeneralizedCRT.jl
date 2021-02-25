@@ -1,5 +1,7 @@
 module GeneralizedCRT
 
+using Base.Threads
+
 export crt
 
 """
@@ -47,16 +49,39 @@ end
 
 const THRESHOLD = 100
 
-function crt(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
+function crts(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     n = length(a)
     n == length(m) || throw(ArgumentError("vectors of same size required"))
     if n < THRESHOLD
         crtm(a, m)
     else
         n2 = (n + 1) ÷ 2
-        xI, lcmI = crt(view(a,1:n2), view(m, 1:n2))
-        xJ, lcmJ = crt(view(a, n2+1:n), view(m, n2+1:n))
+        xI, lcmI = crts(view(a,1:n2), view(m, 1:n2))
+        xJ, lcmJ = crts(view(a, n2+1:n), view(m, n2+1:n))
         crt(xI, xJ, lcmI, lcmJ)
+    end
+end
+
+import Base.Threads.@spawn
+
+function crt(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
+    n = length(a)
+    n == length(m) || throw(ArgumentError("vectors of same size required"))
+    nt = nthreads()
+    if nt <= 1 || n < THRESHOLD
+        crtm(a, m)
+    else
+        ni = n ÷ nt
+        tasks = Vector{Any}(undef, nt)
+        for i = 1:nt
+            n1 = ni * (i - 1) + 1
+            n2 = i < nt ? n1 + ni : n
+            tasks[i] = @spawn crts(view(a, n1:n2), view(m, n1:n2))
+        end
+        res = fetch.(tasks)
+        a0 = [first(r) for r in res]
+        m0 = [last(r) for r in res]
+        crtm(a0, m0)
     end
 end
 
