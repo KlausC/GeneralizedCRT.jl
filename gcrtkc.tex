@@ -1,0 +1,319 @@
+%These comments were left for any intrepid scholars who may examine this file after me
+
+\documentclass[12pt]{article}
+\title{A Generalization of The Chinese Remainder Theorem}
+\author{Klaus Crusius}
+
+\usepackage{amssymb,amsmath,amsthm}
+\usepackage[pdftex]{graphicx}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+
+
+\providecommand{\divides}[2]{#1 \, \lvert \, #2}
+\providecommand{\refeq}[1]{(eq.#1)}
+\def\1ton{1 \cdots n}
+\providecommand{\for}[2]{\forall_{#1 \in #2} \;}
+\providecommand{\forn}[1]{\for{#1}{\1ton}}
+\providecommand{\set}[2]{\{ #1 \mid #2 \}}
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\up}[1]{u_p\left(#1\right)}
+\providecommand{\gcdc}[1]{\gcd\left(#1\right)}
+\providecommand{\lcmc}[1]{\lcm\left(#1\right)}
+\providecommand{\minc}[1]{\min\left(#1\right)}
+\providecommand{\maxc}[1]{\max\left(#1\right)}
+\def\ie{i.e.\,}
+\def\lt{<}
+\def\coloneqq{:=}
+\def\Z{\mathbb{Z}}
+\def\N{\mathbb{N}}
+\DeclareMathOperator*{\modf}{mod}
+\DeclareMathOperator{\lcm}{lcm}
+
+\begin{document}
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+\abstract{
+\indent It is well known, that the Chinese Remainder Theorem is valid under the condition of mutual co-prime multiple modules. This paper gives a generalization to the case of non-co-prime modules. The constructive proof allows to derive an efficient algorithm, which can be easily parallelized.
+}
+
+\noindent \section{Theorems and Proofs}
+
+
+\indent It is well known that the following Theorem is valid.
+
+\begin{theorem}{Chinese Remainder Theorem}
+	\label{theorem:CRT}
+	
+	Given $n \ge 1$ and a set of mutual co-prime positive integers $m_i$ and corresponding remainders $ a_i $ with $ 0 \le a_i \lt m_i$ for $ i = 1,2,\dotsc n$. Then there exists exactly one $x$ with $ 0 \le x \lt m_1 m_2 \dotsm m_n$ which solves the equations
+	$ x \equiv a_i  \mod  m_i$ for all $ i = \1ton$. \cite[ch.~4.3.2, p.~286]{Knuth2}
+
+\end{theorem}
+
+This theorem becomes invalid, if we drop the condition of mutual co-primeness. For example there is no solution for  $x \equiv 0 \mod 20 \text{; }x \equiv 1 \mod 50$, while for $x \equiv 1 \mod 20 \text{; } x \equiv 11 \mod 50$ we have $10$ solutions $\{61, 161, \dotsc, 961\}$.
+
+At first, we will proof a necessary condition on the remainders, if a solution is to exist.
+
+\begin{theorem}{Necessary condition on remainders}
+	\label{theorem:nec}
+	
+	Let $m_1, m_2, \dotsc, m_n$ be positive and $x, a_1, a_2, \dotsc, a_n$ be integers, which solve the equations
+	\begin{equation}
+	\label{eq:xam}\tag{\ref{theorem:nec}.1}
+	 \forn{i} x \equiv a_i \mod m_i.
+	 \end{equation}
+	Then we have
+	
+	\begin{equation}
+	\label{eq:amij}\tag{\ref{theorem:nec}.2}
+	 \forn{i, j} a_i \equiv a_j \mod \gcd\left(m_i, m_j\right)
+	 \end{equation}
+\end{theorem}
+
+\begin{proof}
+	From \eqref{eq:xam} and because $\divides{\gcd\left(m_i, m_j\right)}{m_i}$ we conclude, that $x \equiv a_i \mod \gcd\left(m_i, m_j\right)$ for all $i, j$. By eliminating $x$ for each pair of $i,j$ the assertion follows immediately. 
+\end{proof}
+
+We will give a generalization of Theorem \ref{theorem:CRT}, which replaces the co-primeness condition on $ m_i$ by the necessary condition \eqref{eq:xam}. We restrict in a first step to the case $ n = 2$ and prove the following:
+
+\begin{theorem}{Generalized Chinese Remainder Theorem - two modules}
+	\label{theorem:CRT2}
+	
+	Let $ p, q, a, b \in \Z$ integers with $0 \le a \lt p$ and $ 0 \le b \lt q$. If
+\begin{equation}
+\label{eq:abpq}\tag{\ref{theorem:CRT2}.1}
+ a \equiv b \mod \gcd\left(p, q\right),
+\end{equation}
+then there exists a unique $ x \in \Z $ with 
+
+\begin{equation}
+\label{eq:xapbq}\tag{\ref{theorem:CRT2}.2}
+x \equiv a \mod p \; and \; x \equiv b \mod q.
+\end{equation}
+
+\begin{equation}
+\label{eq:xltlcm}\tag{\ref{theorem:CRT2}.3}
+ 0 \le x \lt \lcm\left(p, q\right) \text{ and }
+\end{equation}
+
+The solution is given by formula
+\begin{equation}
+\label{eq:xab}\tag{\ref{theorem:CRT2}.4}
+\begin{split}
+x &= a + p \ \modf\left( u \left(\frac{b - a}{c}\right), \; \frac{q}{c} \right)\\
+\text{ with } c &= \gcd\left(p, q\right) \text{ and } u = \; {\left(\frac{p}{c}\right)}^{-1} \mod \frac{q}{c}.\notag
+\end{split}
+\end{equation}
+
+\end{theorem}
+
+\begin{proof}
+ 
+	\em Uniqueness: \em Assume $x$ and $y$ solve equations \eqref{eq:xapbq}. Then by subtracting we obtain $x \equiv y \mod p$ and $x \equiv y \mod q$. Then $x \equiv y \mod \lcm\left(p, q\right)$ by equation \eqref{lemma.b} of Lemma \ref{lemma}. Because of \eqref{eq:xltlcm} $x = y$.
+	
+	
+	 \em Construction of solution: \em We give a closed formula for an x  solving \eqref{eq:xapbq}  and  \eqref{eq:xltlcm} under condition \eqref{eq:abpq}.
+	 
+	 Let $c \coloneqq  \gcd\left(p, q\right)$. We can write $a = a_2 + c a_1$ and $b = a_2 + c b_1$ with $0 \le a_2 \lt c$, because $a \equiv b \mod c$. The equations become
+	 $x = a_2 + c a_1 + c p_1 r$ and  $x = a_2 + c b_1 + c q_1$. Here $p_1 \coloneqq p / c$ and $q_1 \coloneqq q / c$. $p_1$ and $q_1$ are co-prime. By introducing a new variable $y$, substituting
+	 \begin{align}
+	 \label{eq:xy}x &= c y + a_2 \text{, and dividing by $c$, we obtain}\\
+	 \label{eq:ya}y &= a_1 + p_1 r \text{ and } y = b_1 + q_1 s.
+	 \end{align}
+	 
+	  Theorem \ref{theorem:CRT} asserts the existence and uniqueness of $y$ with $0 \le y \lt p_1 q_1$. We try to calculate $y$, $r$, and $s$.
+	 
+	 There is a unique inverse $u$ of $p_1$ modulo $q_1$, \ie $u p_1 = 1 + q_1 v$ with $0 \le u \lt q_1$, which can be calculated by a the Extended Euclid's algorithm \cite[ch.~4.5.2, Theorem X, ~p.342]{Knuth2}. We subtract equations \eqref{eq:ya} and multiply with $u$ to obtain
+	 \begin{align*}
+	 u \left(b_1 - a_1\right) &= u p_1 r - u q_1 s\\
+	  &= r + q_1 v r - u q_1 s\\
+	  &= r + \left(v r - u s\right) q_1 \text{, hence}\\
+	 p_1 r &= p_1 \left[u \left(b_1 - a_1\right)\right] + \left(u s - v r\right) p_1 q_1,\\
+	 \intertext{thus \eqref{eq:ya} becomes}
+		y &= a_1 + p_1 \left[u \left(b_1 - a_1\right)\right] + \left(u s - v r\right) p_1 q_1.
+	 \end{align*}
+	 If we perform the calculation of $u \left(b_1 - a_1\right)$ modulo $q_1$, we get $u \left(b_1 - a_1\right) = \modf\left(u \left(b_1 - a_1\right), q_1\right) + k q_1$ for some $k$, to obtain finally the solution in terms of $y$:
+	 \begin{equation*}
+	 \label{eq:ysol}y = a_1 + p_1 \modf\left( u \left(b_1 - a_1\right), q_1\right) + \left(u s - v r + k\right) p_1 q_1.
+	 \end{equation*}
+	 Because $0 \le a_1 \lt p_1$ and $0 \le \modf\left(\cdot, q_1\right) \le q_1-1$, we have
+	 \begin{equation*}
+	 0 \le a_1 + p_1 \modf\left(u \left(b_1 - a_1\right), q_1\right) \le a_1 + p_1 \left(q_1 - 1\right) \lt p_1 q_1.
+	 \end{equation*}
+	  
+	 Therefore
+	 \begin{equation*}
+	   	y = a_1 + p_1 \modf\left(u \left(b_1 - a_1\right), q_1\right)
+	 \end{equation*}
+	 is the unique solution of \eqref{eq:ya}, with $0 \le y \lt p_1 q_1$. Re-substituting $x$ in \eqref{eq:xy} gives $x = a_2 + c a_1 + p \modf\left(u \left(b_1 - a_1\right), q_1\right)$ and using the original values
+	 \begin{equation}
+	 \tag{\ref{eq:xab}}
+	 \begin{split}
+		 x &= a + p \modf\left( u \left(\left(b - a\right) / c\right), q/c \right)\\
+		\text{ with } c &= \gcd\left(p, q\right) \text{ and } u = \modf\left(p/c, q/c\right).\notag
+		\end{split}
+	 \end{equation}
+	 We claim that x of \eqref{eq:xab} is the unique solution of \eqref{eq:xapbq} and \eqref{eq:xltlcm}. First part of \eqref{eq:xapbq} is obvious. For the second we have to prove $a + p \left(u \left(b - a\right)/c - k q / c\right) \equiv b \mod q$. That is equivalent to $a - b + p_1 u \left(b - a\right) - p_1 k q \equiv 0 \mod q$. Since $p_1 u = 1 + q_1 v$,  that reduces further to
+	 $a - b + b - a + q_1 v \left(b - a\right) \equiv 0 \mod q$, or $q v \left(b_1 - a_1\right) \equiv 0 \mod q$, which is valid.
+	 
+	 To prove \eqref{eq:xltlcm}, we use $0 \le a \lt p \text{ and } 0 \le \modf\left(\cdot, q/c\right) \le q/c - 1$ to conclude $0 \le x \lt p + p\left(q/c-1\right) = p q / c = \lcm\left(p, q\right)$.
+
+\end{proof}
+
+We can now formulate the main theorem of this article.
+\begin{theorem}{Generalized Chinese Remainder Theorem}
+	\label{theorem:CRTG}
+	
+	Let $m_1, m_2, \dotsc , m_n$ be positive and $a_1, a_2, \dotsc , a_n$ be integers with $0 \le a_i \lt m_i$ satisfying for all $i, j \in \{\1ton\} \text{ the conditions }$ $$a_i \equiv a_j \mod \gcd\left(m_i, m_j\right)$$
+
+	Then there is exactly one integer $x \text{ with } 0 \le x \lt \lcm\left(m_i \mid i \in \{\1ton\} \right)$, which satisfies
+	 $$x \equiv a_i \mod m_i \text{ for } i \in \{\1ton\} \ .$$
+		
+\end{theorem}
+
+\begin{proof}$\\$
+	For the purpose of this proof, we define $\lcm_I \coloneqq \lcmc{\set{m_i}{i \in I}}$
+	
+	The theorem is valid independent of the chosen finite index set. So we can write $m_i \text{ for } i \in I \text{ with } \abs{I} \lt \infty$ without changing the proof.
+	 
+	If $n = 1$ the assertion is trivially true with $x = a_1$.\\
+	If $n > 1$ we conduct a proof by induction on n.
+	
+	Assume, the assertion of the theorem was true for all index sets $I \text{ with } \abs{I} \lt n$. Then we can derive the assertion using previous Theorem \ref{theorem:CRT2}. We split the complete index set into two non-empty subsets $I, J \ne \emptyset \text{ with } I \cup J = \{\1ton\}$. Because of the induction assumption, for $K \in \{I, J\}$ there is a $x_K$ with
+	\begin{equation} 
+	\label{eq:indco} 0 \le x_K \lt \lcm_K \text{ and } \forall_{i \in K}\; x_K \equiv a_i \mod m_i.
+	\end{equation}
+	We want to apply Theorem \ref{theorem:CRT2} with $a = x_I, b = x_J, p = \lcm_I, q = \lcm_J$. The necessary condition \eqref{eq:abpq} reads now $$x_I \equiv x_J \mod \gcd\left(\lcm_I, \lcm_J\right).$$
+	Because of \eqref{eq:indco} $\forall_{i \in I} \forall_{j \in J} \; x_I \equiv a_i \mod \gcd\left(m_i, m_j\right) \text{ and } x_J \equiv a_j \mod \gcd\left(m_i, m_j\right)$, using conclusion \eqref{lemma.a} of Lemma \ref{lemma}.\\
+	Hence $\forall_{i \in I} \forall_{j \in J}\; x_I - x_J \equiv a_i - a_j \equiv 0 \mod \gcd\left(m_i, m_j\right)$, which is equivalent by Lemma \ref{lemma} \eqref{lemma.b} to
+	$$ x_I \equiv x_J \mod \lcm\left(\set{\gcd\left(m_i, m_j\right)}{i \in I, j \in J}\right).$$
+	Then the necessary condition follows, because of Lemma \ref{lemma} \eqref{lemma.c} and \eqref{lemma.a}.
+	
+	Theorem \ref{theorem:CRT2} delivers a unique $0 \le x \lt \lcmc{\lcm_I, \lcm_J}$ with
+	$ x \equiv x_I \mod \lcm_I \ \land \ x \equiv x_J \mod \lcm_J$. Because of Lemma \ref{lemma} \eqref{lemma.a} and $\divides{m_i}{\lcm_I}$ we have $ \forall_{i \in I}\; x \equiv x_I \mod m_i$. So $ x \equiv a_i \mod m_i$ because of \eqref{eq:indco}. The same is true $ \forall_{i \in J}$.
+	
+\end{proof}
+
+The proofs need some auxiliary facts from elementary number theory, which are noted in the following:
+
+\begin{lemma}\label{lemma}
+	In all statements below let
+	\begin{align*}
+	&x, y, a, u \in \Z, I, J \text{ finite index sets, and } \for{i}{I \cup J} m_i \in \N \\
+	&\lcm_I \coloneqq \lcm\left(\set{m_i}{i \in I}\right)
+	\end{align*}
+	 then
+		
+	\begin{align}
+		\label{lemma.a}\tag{L1}
+		x \equiv y \mod u &\implies \forall_{\divides{a}{u}} \; x \equiv y \mod a\\
+		\label{lemma.b}\tag{L2}
+		\for{i}{I} x \equiv y \mod m_i	&\iff x \equiv y \mod \lcm_I\\  \label{lemma.c}\tag{L3}
+		\lcm\left(\lcm_I, \lcm_j\right) & \quad = \; \lcm_{I \cup J}\\
+		\label{lemma.d}\tag{L4}
+		\gcd\left(\lcm_I, \lcm_J\right) \text{ divides }
+		&\lcm\left(\set{\gcd\left(m_i, m_j\right)}{i \in I, j \in J}\right)
+	\end{align}
+		
+\end{lemma}
+
+\begin{proof}$\\$
+		\eqref{lemma.a}: If $u = k a \text{ and } x = y + v u \text{ for some } k, v \in \Z$, then $x = y + \left(v k\right) a$, hence $x \equiv y \mod a$.
+		
+		\eqref{lemma.b}: $\impliedby$ is clear because $\for{i}{I} \divides{m_i}{\lcm_I}$ and \eqref{lemma.a}.
+		
+		$\implies$: To see that we assume $x - y = k \mod \lcm_I$ with $0 \le k \lt \lcm_I$ and show, that $k = 0$.
+		 Because $\forall_i \divides{m_i}{\lcm_I}$, we have $x - y = k + \lcm_I u = k + m_i u_i$ for some $u, u_i$. Because $\forall_i \; x – y \equiv 0 \mod m_i$, $\exists_{v_i} \; x - y = m_i v_i$, hence $k = m_i \left(v_i - u_i\right)$. That means $k$ is a multiple of all $m_i$, hence of $\lcm_I$, by the definition of $\lcm$. The only $k$ with $0 \le k \lt \lcm_I$ is $k = 0$.
+		 
+		 \eqref{lemma.c}$ "\ge"$ : because $\lcm\left(\lcm_I, \lcm_J\right) = \lcm_I k_I \text{ and } lcm_I = m_i k_{iI}$ for some $k_I, k_{iI} \for{i}{I} $, we have $\lcm\left(\lcm_I, \lcm_J\right) = m_i k_I k_iI$, that means the left-hand side is a multiple of $m_i \for{i}{I}$. Accordingly, it is a multiple of $m_j \for{j}{J}$. Then, by definition of $\lcm$ it is $\ge \lcm_{I\cup J}$.
+		 
+		 $ "\le"$ : $\lcm_{I \cup J}$ is a multiple of $m_i \for{i}{I}$, hence of $\lcm_I$ by definition of $\lcm_I$; accordingly also of $\lcm_J$. Then it is also a multiple of $\lcm\left(lcm_I, lcm_J\right)$. So the right-hand side is $\ge$ the left-hand side.
+		 
+		 \eqref{lemma.d}: We make use of the Fundamental Theorem of Arithmetic \cite[chapter 1.2.4, exercise ~21]{Knuth1}, which proves the unique prime-factorization of the natural numbers. For each number $n \in \N$ and each prime number $p$ there is a unique exponent $\up{n} \in \N \cup \{0\}$, such that $$ n = \prod_{p \text{ prime}} p^{\up{n}}.$$ where only a finite amount of the $u_p\left(n\right) \ne 0$. Then we have
+		 \begin{align*}
+			 \gcdc{m, n} &= \prod_{p \text{ prime}} p^{\minc{\up{m}, \up{n}}}\\
+			 \lcmc{m, n} &= \prod_{p \text{ prime}} p^{\maxc{\up{m}, \up{n}}}\\
+		 \end{align*}
+		 or for each prime $p$
+		 \begin{align*}
+			 \divides{m}{n} &\iff \forall_p \; \up{m} \le \up{n}\\
+			 \up{\gcdc{m, n}} &= \minc{\up{m}, \up{n}}\\
+			 \up{\lcmc{m, n}} &= \maxc{\up{m}, \up{n}}\\
+		\end{align*}
+		Then \eqref{lemma.d} ( we set $u_{pi} \coloneqq \up{m_i}$ ) is equivalent to  
+		\begin{equation}\label{eq:minmax}
+		\begin{split}
+			\forall_p &\minc{\maxc{\set{u_{pi}}{i \in I}}, \maxc{\set{u_{pj}}{j \in J}}}\\
+			\le &\maxc{\set{\minc{u_{pi}, u_{pj}}}{i \in I, j \in J}}
+		\end{split}
+		\end{equation}
+		There is an $i_{max} \in I$ with $ u_{pi_{max}} = \maxc{\set{u_{pi}}{i \in I}}$; as well as an $j_{max} \in J$. Inserting these into the left-hand side of \eqref{eq:minmax} gives
+		\begin{align*}
+			\minc{u_{pi_{max}}, u_{pj_{max}}} \le \maxc{\set{\minc{u_{pi}, u_{pj}}}{i \in I, j \in J}}
+		\end{align*}
+		which is obviously true for all prime numbers $p$.
+\end{proof}
+
+
+\section{Algorithms}
+
+From Theorem \ref{theorem:CRT2} we can straightforward derive the following procedure:
+
+\newtheorem{algo}{Algorithm}
+\begin{algo}$\\$
+	\noindent procedure crt2(a, b, p, q)\\ 
+	Input: a, b, p, q: integers p, q $>$ 0\\
+	Output: x, lcm: solution, least common multiple of p and q\\
+	Errors: fail if a $\ne b \mod \gcdc{p, q}\\$
+	External: gcdx: calculate greatest common divisor\\
+	                and inverse of co-prime pair\\
+	\begin{align*}
+	&c, u \coloneqq gcdx(p, q)\\
+	&p_1, q_1 \coloneqq p / c, q / c\\
+	&u \coloneqq \modf(u, q_1)\\
+	&if \; mod(b -a, c) \ne 0 \; Error("remainders' condition")\\
+	&bac \coloneqq (b - a) / c\\
+	&x \coloneqq a + p * mod(u * bac, q_1)\\
+	&lcm \coloneqq p * q_1\\
+	&return \; x, lcm
+	\end{align*}
+\end{algo}
+
+Theorem \ref{theorem:CRTG} provides some freedom in partitioning the original set. If $n = 1$ we return the trivial solution or we apply Algorithm 1. Otherwise, we split $ \{\1ton\} $ two partitions and apply Theorem \ref{theorem:CRTG}.
+\begin{algo}$\\$
+	\noindent procedure crtg(a, m)\\ 
+	Input: a, m: integer vectors of same lengths, m $>$ 0\\
+	Output: x, lcm: solution, least common multiple of m\\
+	Errors: fail if $a_i \ne a_j \mod \gcdc{m_i, m_j} for \ any \ i, \ j$\\
+	External: crt2: see above\\
+	\begin{align*}
+	&n \coloneqq length(a) \\
+	&x_I, lcm_I \coloneqq 1,\ 1\\
+	&for \ i \coloneqq 1 \dots n\\
+	&\ \ x_I, lcm_I \coloneqq crt2(x_I, a[i], lcm_I, m[i])\\
+	&end\\
+	&return \; x_I, lcm_I\\
+	\end{align*} 
+\end{algo}
+
+
+\newpage
+
+\begin{thebibliography}{4}
+	
+	\bibitem{Knuth1}
+	 Donald E. Knuth,
+	 \emph{The Art of Computer Programming - Volume 1}
+	 Addison-Wesley, New York, 3rd edition,  1998.
+	 
+	 \bibitem{Knuth2}
+	 Donald E. Knuth,
+	 \emph{The Art of Computer Programming - Volume 2}
+	 Addison-Wesley, New York, 3rd edition,  1998.
+	
+\end{thebibliography}
+
+\end{document}
