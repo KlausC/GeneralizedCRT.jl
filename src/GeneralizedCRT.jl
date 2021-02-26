@@ -39,20 +39,24 @@ Return `x, lcm(p, q)`.
 """
 function crtm(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     n = length(a)
+    # println("crtm($n, $(length(m)))")
     n == length(m) || throw(ArgumentError("vectors of same size required"))
-    xI, lcmI = one(T), one(S)
-    for i = 1:n
+    R = promote_type(S, T)
+    n == 0 && return zero(R), one(R)
+    xI, lcmI = promote(a[1], m[1])
+    for i = 2:n
         xI, lcmI = crt(xI, a[i], lcmI, m[i])
     end
     xI, lcmI
 end
 
-const THRESHOLD = 100
-
 function crts(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     n = length(a)
-    n == length(m) || throw(ArgumentError("vectors of same size required"))
-    if n < THRESHOLD
+    if n != length(m)
+        px("ctrs(", a, ","); px(" ", m, ")\n")
+        n == length(m) || throw(ArgumentError("vectors of same size required"))
+    end
+    if n <= max(THRESHOLD, 3)
         crtm(a, m)
     else
         n2 = (n + 1) ÷ 2
@@ -62,26 +66,46 @@ function crts(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     end
 end
 
+px(s, a::AbstractVector, t) = print(s, "1:$(length(a))", t)
+px(s, a::SubArray, t) = print(s, a.indices[1], t)
+
 import Base.Threads.@spawn
+
+const THRESHOLD = 75
 
 function crt(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     n = length(a)
     n == length(m) || throw(ArgumentError("vectors of same size required"))
     nt = nthreads()
-    if nt <= 1 || n < THRESHOLD
-        crtm(a, m)
+    if nt <= 1 || n <= THRESHOLD
+        crts(a, m)
     else
-        ni = n ÷ nt
+        R = promote_type(S, T)
+        t0 = time_ns()
+        ni = max(n ÷ nt, 2)
+        nt = (n + ni - 1) ÷ ni
         tasks = Vector{Any}(undef, nt)
+        n2 = 0
+        nth = nt
         for i = 1:nt
-            n1 = ni * (i - 1) + 1
-            n2 = i < nt ? n1 + ni : n
-            tasks[i] = @spawn crts(view(a, n1:n2), view(m, n1:n2))
+            n1 = n2 + 1
+            n2 = n2 + (n - n2) ÷ nth
+            nth -= 1
+            av = view(a, n1:n2)
+            mv = view(m, n1:n2)
+            tasks[i] = @spawn crts($av, $mv)
         end
-        res = fetch.(tasks)
-        a0 = [first(r) for r in res]
-        m0 = [last(r) for r in res]
-        crtm(a0, m0)
+        a0 = Vector{R}(undef, nt)
+        m0 = Vector{R}(undef, nt)
+        for i = 1:nt
+            res = fetch(tasks[i])
+            a0[i] = first(res)
+            m0[i] = last(res)
+        end
+        t1 = time_ns()
+        x, l = crt(a0, m0)
+        t2 = time_ns()
+        x, l
     end
 end
 
