@@ -11,6 +11,14 @@ using Test
 end
 
 @testset "crt_short" begin
+    a = Int[]
+    m = Int[]
+    @test crt(a, m) == (0, 1)
+
+    a = [12]
+    m = [10]
+    @test crt(a, m) == (2, 10)
+
     a = [1, 11]
     m = [20, 50]
     @test crt(a, m) == crt(a..., m...)
@@ -39,7 +47,7 @@ using Random
 rng = MersenneTwister(1)
 
 @testset "crt_long" begin
-    n = GeneralizedCRT.THRESHOLD * 1000 - 100
+    n = GeneralizedCRT.THRESHOLD1 * 1000 - 100
     m = rand(rng, 1:999, n)
     l = lcm(big.(m))
     x = rand(rng, 1:l)

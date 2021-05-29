@@ -44,6 +44,7 @@ function crtm(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     R = promote_type(S, T)
     n == 0 && return zero(R), one(R)
     xI, lcmI = promote(a[1], m[1])
+    xI = mod(xI, lcmI)
     for i = 2:n
         xI, lcmI = crt(xI, a[i], lcmI, m[i])
     end
@@ -56,7 +57,7 @@ function crts(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
         px("ctrs(", a, ","); px(" ", m, ")\n")
         n == length(m) || throw(ArgumentError("vectors of same size required"))
     end
-    if n <= max(THRESHOLD, 3)
+    if n <= max(THRESHOLD1, 3)
         crtm(a, m)
     else
         n2 = (n + 1) ÷ 2
@@ -71,13 +72,14 @@ px(s, a::SubArray, t) = print(s, a.indices[1], t)
 
 import Base.Threads.@spawn
 
-const THRESHOLD = 75
+THRESHOLD1 = 2
+THRESHOLD2 = 2
 
 function crt(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     n = length(a)
     n == length(m) || throw(ArgumentError("vectors of same size required"))
     nt = nthreads()
-    if nt <= 1 || n <= THRESHOLD
+    if nt <= 1 || n <= THRESHOLD2
         crts(a, m)
     else
         R = promote_type(S, T)
@@ -98,7 +100,11 @@ function crt(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
         a0 = Vector{R}(undef, nt)
         m0 = Vector{R}(undef, nt)
         for i = 1:nt
-            res = fetch(tasks[i])
+            res = try
+                fetch(tasks[i])
+            catch ex
+                ex isa TaskFailedException ? throw(ex.task.result) : rethrow()
+            end
             a0[i] = first(res)
             m0[i] = last(res)
         end
@@ -109,4 +115,4 @@ function crt(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
     end
 end
 
-end
+end # module
