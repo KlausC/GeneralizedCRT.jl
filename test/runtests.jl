@@ -47,12 +47,13 @@ using Random
 rng = MersenneTwister(1)
 
 @testset "crt_long" begin
-    n = GeneralizedCRT.THRESHOLD1 * 1000 - 100
+    n = max(GeneralizedCRT.THRESHOLD1, GeneralizedCRT.THRESHOLD2) * 1000 - 100
     m = rand(rng, 1:999, n)
     l = lcm(big.(m))
     x = rand(rng, 1:l)
     a = mod.(x, m)
     @test crt(a, m) == (x, l)
+    @test_throws OverflowError crt(zeros(Int, n), m)
 end
 
 end
