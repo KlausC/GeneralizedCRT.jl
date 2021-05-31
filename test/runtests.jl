@@ -3,9 +3,12 @@ using Test
 
 @testset "GeneralizedCRT" begin
 
-@testset "crt2" begin
+@testset "crt basic" begin
     a, b, p, q = 1, 11, 20, 50
-    @test crt(a, b, p, q) == (61, 100) 
+    @test crt((a, p)) == (mod(a, p), p)
+    @test crt([(a, p), (b, q)]) == crt(a, b, p, q)
+    @test crt(a, b, p, q) == (61, 100)
+    @test crt((a, p), (b, q)) == crt(a, b, p, q)
     a = 0
     @test_throws ArgumentError crt(a, b, p, q)
 end

@@ -31,6 +31,11 @@ function crt(a::T, b::T, p::T, q::T) where T
     return x, lcm
 end
 
+function crt(ap::AbstractVector{<:Tuple{<:Integer,<:Integer}})
+    crt([x[1] for x in ap], [x[2] for x in ap])
+end
+crt(t::Tuple{S,T}...) where {S<:Integer,T<:Integer} = crt(collect(t))
+
 """
     crt(a::Vector, m::Vector; nthreads, splitstreads, splitbinary)
 
@@ -44,14 +49,15 @@ Use binary algorithm is `length(a) > splitbinary=($THRESHOLD1)`.
 
 Return `x, lcm(p, q)`.
 """
-function crt(a::AbstractVector{T}, m::AbstractVector{S}; nt=nthreads(), splitthreads=THRESHOLD2, splitbinary=THRESHOLD1) where {S,T}
+function crt(a::AbstractVector{T}, m::AbstractVector{S}; nt=nthreads()-1, splitthreads=THRESHOLD2, splitbinary=THRESHOLD1) where {S,T}
+    # split input array and execute in parallel threads
     n = length(a)
     n == length(m) || throw(ArgumentError("vectors of same size required"))
     if nt <= 1 || n <= splitthreads
         crts(a, m; splitbinary)
     else
+        nt = max(nt, nthreads() - 1)
         R = promote_type(S, T)
-        t0 = time_ns()
         ni = max(n ÷ nt, 2)
         nt = (n + ni - 1) ÷ ni
         tasks = Vector{Any}(undef, nt)
@@ -76,27 +82,12 @@ function crt(a::AbstractVector{T}, m::AbstractVector{S}; nt=nthreads(), splitthr
             a0[i] = first(res)
             m0[i] = last(res)
         end
-        t1 = time_ns()
         x, l = crt(a0, m0)
-        t2 = time_ns()
         x, l
     end
 end
 
-function crtm(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
-    n = length(a)
-    # println("crtm($n, $(length(m)))")
-    n == length(m) || throw(ArgumentError("vectors of same size required"))
-    R = promote_type(S, T)
-    n == 0 && return zero(R), one(R)
-    xI, lcmI = promote(a[1], m[1])
-    xI = mod(xI, lcmI)
-    for i = 2:n
-        xI, lcmI = crt(xI, a[i], lcmI, m[i])
-    end
-    xI, lcmI
-end
-
+# split input array in halves a recombine output
 function crts(a::AbstractVector{T}, m::AbstractVector{S}; splitbinary) where {S,T}
     n = length(a)
     n == length(m) || throw(ArgumentError("vectors of same size required"))
@@ -109,5 +100,22 @@ function crts(a::AbstractVector{T}, m::AbstractVector{S}; splitbinary) where {S,
         crt(xI, xJ, lcmI, lcmJ)
     end
 end
+
+# process input array sequentially
+function crtm(a::AbstractVector{T}, m::AbstractVector{S}) where {S,T}
+    n = length(a)
+    # println("crtm($n, $(length(m)))")
+    n == length(m) || throw(ArgumentError("vectors of same size required"))
+    R = promote_type(S, T)
+    n == 0 && return zero(R), one(R)
+    xI, lcmI = promote(a[1], m[1])
+    xI = _mod(xI, lcmI)
+    for i = 2:n
+        xI, lcmI = crt(xI, _mod(a[i], m[i]), lcmI, m[i])
+    end
+    xI, lcmI
+end
+
+_mod(a, b) = 0 <=a < b ? oftype(b, a) : mod(a, b)
 
 end # module
